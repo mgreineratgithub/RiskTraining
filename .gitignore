@@ -1,5 +1,82 @@
-# History files
-.Rhistory
+# Grundlagen der Risikobewertung -- Hannover 2013
 
-# Example code in package build process
-*-Ex.R
+# Ein kleiner Ausflug in die Risikomodellierung mit R 
+
+# Probabilistisches Modell im Kontext der Importrisikoanalyse  
+							
+# Einstellung: Anzahl Iterationen							
+	it	<-	10000
+							
+# Definition einer Funktion zur Erzeugung der Beta-Verteilung
+# für empirische Schätzungen einer Prävalenz als k/n	
+	k	<-	10				
+	n	<-	1000				
+	P	<-	rbeta(it, k+1, n-k+1)				
+				# Darstellung der Ergebnisse			
+				summary(P)
+				hist(P)			
+							
+# Definition einer Funktion zur Erzeugung der Beta-Verteilung							
+	myBeta	<-	function(k,n)				
+			{				
+			rbeta(it, k+1, n-k+1)				
+			}				
+							
+	myRes	<-	function(data,name)				
+			{				
+			sum <- summary(data)				
+			print(sum)				
+			hist(data,main="",xlab=name)				
+			}				
+							
+							
+# Sensitivität des Tests (geschätzt als k/n)							
+	Se	<-	myBeta(10,10)
+			myRes(Se)				
+
+# Spezifität des Tests (Experteneinschätzung = 100%)							
+	Sp	<-	1			
+							
+# Annahmen							
+# Schaden bei Import eines infizierten Fisches (Utility eines falsch negativen Testergebnisses)							
+	Sch	<-	250
+							
+# Nutzen bei Import eines nicht-infizierten Fischs (Utility eines richtig negativen Testergebnisses)							
+	Nu	<-	80				
+							
+# Risiko bei Import							
+	ESch	<- 	P*(1-Se)*Sch				
+							
+# Nutzen bei Import							
+	ENu	<-	(1-P)*Sp*Nu				
+							
+# Gesamterwartung bei Import							
+	Dif	<- 	ESch-ENu				
+							
+# Breakeven P für den Schaden=Nutzen							
+	BE	<-	1/(((1-Se)*Sch/(Sp*Nu))+1)				
+							
+# Darstellung der Ergebnisse							
+	myRes(ESch,"Erwarteter Schaden")						
+
+Sensitivität <- seq(0,1,0.01)
+Prävalenz <- seq(0,1,.01)
+
+plot(Sensitivität~Prävalenz,type="n")
+
+
+# Breakeven contour
+# red area: do not introduce the fish
+Sensitivität <- seq(0,1,0.01)
+Prävalenz <- seq(0,1,.01)
+
+plot(Sensitivität~Prävalenz,type="n")
+for(i in 1:length(Sensitivität)){
+  x <- rep(NA,length(Sensitivität))
+  w <- which((Prävalenz[i]*(1-Sensitivität)*Sch - 
+                            (1-Prävalenz[i]) * Nu) > 1)
+  x[w] <- Sensitivität[w]
+  points(rep(Prävalenz[i],length(Sensitivität)),x,pch=20,col="red")
+}
+  
+  
