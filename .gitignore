@@ -68,9 +68,7 @@ myRes(BE)
 
 
 # Breakeven contour for Se and P ranging [0,1] and Sp=1
-# red area: do not introduce the fish
 # Do not introduce the fish if (unknown) parameters are in the red area
-
 gp <- 100 # number of gridpoints
 grid <- matrix(nrow=gp,ncol=gp)
 Sensitivity <- seq(0, 1, length.out=gp)
