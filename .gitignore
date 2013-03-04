@@ -75,14 +75,14 @@ Sensitivity <- seq(0, 1, length.out=gp)
 Prevalence <- seq(0, 1, length.out=gp)
 plot(Prevalence~Sensitivity,type="n")
 for(c in 1:gp){
-  grid[,c] <- (1-Prevalence)*G - Prevalence*(1-Sensitivity[c])*L
+  grid[c,] <- (1-Prevalence)*G - Prevalence*(1-Sensitivity[c])*L
   }
-contour(z=grid,xlab = "Se", ylab = "P",main = "Gain minus loss")
+contour(x=Sensitivity, y=Prevalence, z=grid,xlab = "Se", ylab = "P",main = "Gain minus loss")
 
 for(c in 1:gp){
   x <- rep(NA,gp)
   w <- which((Prevalence[c]*(1-Sensitivity)*L - 
-                (1-Prävalenz[c]) * G) > 0)
+                (1-Prevalence[c]) * G) > 0)
   x[w] <- Sensitivity[w]
-  points(rep(Prevalence[c],gp),x,pch=".",col=rgb(1, 0, 0, alpha=0.5))
+  points(x, rep(Prevalence[c],gp) ,pch=".",col=rgb(1, 0, 0, alpha=0.5))
 }
