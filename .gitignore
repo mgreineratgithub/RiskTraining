@@ -1,82 +1,88 @@
-# Grundlagen der Risikobewertung -- Hannover 2013
+# Risk modelling in R -- learing by doing 
+# (c) Matthias Greiner, BfR/TiHo 2013
 
-# Ein kleiner Ausflug in die Risikomodellierung mit R 
+# Simple probabilistic model to assess the risk and benefit of purchasing a koi carp
+# See course script for further details (in German).
 
-# Probabilistisches Modell im Kontext der Importrisikoanalyse  
-							
-# Einstellung: Anzahl Iterationen							
-	it	<-	10000
-							
-# Definition einer Funktion zur Erzeugung der Beta-Verteilung
-# für empirische Schätzungen einer Prävalenz als k/n	
-	k	<-	10				
-	n	<-	1000				
-	P	<-	rbeta(it, k+1, n-k+1)				
-				# Darstellung der Ergebnisse			
-				summary(P)
-				hist(P)			
-							
-# Definition einer Funktion zur Erzeugung der Beta-Verteilung							
-	myBeta	<-	function(k,n)				
-			{				
-			rbeta(it, k+1, n-k+1)				
-			}				
-							
-	myRes	<-	function(data,name)				
-			{				
-			sum <- summary(data)				
-			print(sum)				
-			hist(data,main="",xlab=name)				
-			}				
-							
-							
-# Sensitivität des Tests (geschätzt als k/n)							
-	Se	<-	myBeta(10,10)
-			myRes(Se)				
+# Number of iterationen. Global variable assessible in other functions
+it	<-	10000
 
-# Spezifität des Tests (Experteneinschätzung = 100%)							
-	Sp	<-	1			
-							
-# Annahmen							
-# Schaden bei Import eines infizierten Fisches (Utility eines falsch negativen Testergebnisses)							
-	Sch	<-	250
-							
-# Nutzen bei Import eines nicht-infizierten Fischs (Utility eines richtig negativen Testergebnisses)							
-	Nu	<-	80				
-							
-# Risiko bei Import							
-	ESch	<- 	P*(1-Se)*Sch				
-							
-# Nutzen bei Import							
-	ENu	<-	(1-P)*Sp*Nu				
-							
-# Gesamterwartung bei Import							
-	Dif	<- 	ESch-ENu				
-							
-# Breakeven P für den Schaden=Nutzen							
-	BE	<-	1/(((1-Se)*Sch/(Sp*Nu))+1)				
-							
-# Darstellung der Ergebnisse							
-	myRes(ESch,"Erwarteter Schaden")						
+# Expressing uncertainty about a Bernoulli/binomial parameter using a beta distribution
+# Assume empirical data in form of estimator k/n
+k	<-	10				
+n	<-	1000				
+P	<-	rbeta(it, k+1, n-k+1)				
 
-Sensitivität <- seq(0,1,0.01)
-Prävalenz <- seq(0,1,.01)
+# Display the created variable P			
+summary(P)
+hist(P)			
 
-plot(Sensitivität~Prävalenz,type="n")
+# Define function to generate a Monte Carlo (MC) sample from a beta distribution given empirical (k, n) 
+myBeta <- function(k,n)
+  {
+  rbeta(it, k+1, n-k+1)
+  }
 
-
-# Breakeven contour
-# red area: do not introduce the fish
-Sensitivität <- seq(0,1,0.01)
-Prävalenz <- seq(0,1,.01)
-
-plot(Sensitivität~Prävalenz,type="n")
-for(i in 1:length(Sensitivität)){
-  x <- rep(NA,length(Sensitivität))
-  w <- which((Prävalenz[i]*(1-Sensitivität)*Sch - 
-                            (1-Prävalenz[i]) * Nu) > 1)
-  x[w] <- Sensitivität[w]
-  points(rep(Prävalenz[i],length(Sensitivität)),x,pch=20,col="red")
+# Define function to characterise a data set (summary statitsics, histogram and kernel density)
+myRes	<-	function(data)
+  {
+  sum <- summary(data)
+  print(sum)
+  hist(data,prob=TRUE,xlab=deparse(substitute(data)),main="")
+  lines(density(data),col="blue")
 }
-  
-  
+
+# Further model input
+# Diagnostic sensitivity (Se) of the test, assume empirical data Se=10/10 
+Se	<-	myBeta(10,10)
+myRes(Se)				
+
+# Diagnostic specificity (Sp) of the test, assume certainty about Sp=1 
+Sp	<-	1
+
+# Assume financial loss (L) in EUR associated with introducing an infected fish (utility of false negativen test result)
+L <- 250
+
+# Assume financial gain (G) in EUR associated with introducing  non-infected fish (utility of true negative test result)
+G <- 80
+
+# Expected loss (EL) due to an infected, undiagnosed fish 
+EL	<- 	P*(1-Se)*L				
+
+# Expected gain (EG) due to a non-infected, correctly diagnosed fish 
+EG	<-	(1-P)*Sp*G				
+
+# Expected gain minus loss (estimation under uncertainty)
+GML <- 	EG-EL				
+
+# Breakeven point (BE) for prevalence (where EG = EL)
+# Obtained by equating EG and EL and solving for P
+# Evaluation under uncertainty results in a distribution for BE
+BE	<-	1/(((1-Se)*L/(Sp*G))+1)				
+
+# Have a look at the results
+myRes(EG)
+myRes(EL)
+myRes(GML)
+myRes(BE)
+
+
+# Breakeven contour for Se and P ranging [0,1] and Sp=1
+# Do not introduce the fish if (unknown) parameters are in the red area
+gp <- 100 # number of gridpoints
+grid <- matrix(nrow=gp,ncol=gp)
+Sensitivity <- seq(0, 1, length.out=gp)
+Prevalence <- seq(0, 1, length.out=gp)
+plot(Prevalence~Sensitivity,type="n")
+for(c in 1:gp){
+  grid[,c] <- (1-Prevalence)*G - Prevalence*(1-Sensitivity[c])*L
+  }
+contour(z=grid,xlab = "Se", ylab = "P",main = "Gain minus loss")
+
+for(c in 1:gp){
+  x <- rep(NA,gp)
+  w <- which((Prevalence[c]*(1-Sensitivity)*L - 
+                (1-Prävalenz[c]) * G) > 0)
+  x[w] <- Sensitivity[w]
+  points(rep(Prevalence[c],gp),x,pch=".",col=rgb(1, 0, 0, alpha=0.5))
+}
