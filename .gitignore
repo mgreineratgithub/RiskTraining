@@ -4,7 +4,7 @@
 # Simple probabilistic model to assess the risk and benefit of purchasing a koi carp
 # See course script for further details (in German).
 
-# Number of iterationen. Global variable assessible in other functions
+# Number of iterations. Global variable assessible in other functions
 it	<-	10000
 
 # Expressing uncertainty about a Bernoulli/binomial parameter using a beta distribution
